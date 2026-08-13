@@ -33,6 +33,11 @@ function App() {
   const [searchResults, setSearchResults] = useState([])
   const [isSearching, setIsSearching] = useState(false)
 
+  // Atlas Vector Search state
+  const [suggestions, setSuggestions] = useState([])
+  const [suggestionMessage, setSuggestionMessage] = useState('')
+  const [isFindingSuggestions, setIsFindingSuggestions] = useState(false)
+
   // Attachment state
   const [pendingAttachments, setPendingAttachments] = useState([])
   const [uploadingFiles, setUploadingFiles] = useState(false)
@@ -109,7 +114,7 @@ function App() {
       await fetchConversations()
       // Load the new conversation
       await handleSelectConversation(res.data.id)
-    } catch (_err) {
+    } catch {
       alert('Failed to create conversation')
     }
   }
@@ -202,6 +207,45 @@ function App() {
     // Clear search
     setSearchQuery('')
     setSearchResults([])
+  }
+
+  const findSecondWindSuggestions = async () => {
+    if (!input.trim() || !currentConversationId || !currentNodeId) return
+
+    setIsFindingSuggestions(true)
+    setSuggestionMessage('')
+    try {
+      const excludeNodeIds = history
+        .filter(msg => typeof msg === 'object' && msg?.id)
+        .map(msg => msg.id)
+
+      const res = await axios.post(`${API_URL}/suggestions`, {
+        query: input,
+        conversation_id: currentConversationId,
+        exclude_node_ids: excludeNodeIds,
+        limit: 5
+      })
+
+      setSuggestions(res.data.suggestions || [])
+      if (!res.data.available) {
+        setSuggestionMessage(res.data.message || 'Atlas Vector Search is not available.')
+      } else if ((res.data.suggestions || []).length === 0) {
+        setSuggestionMessage('No relevant ideas were found on another path yet.')
+      }
+    } catch (err) {
+      console.error('Second Wind search failed', err)
+      setSuggestions([])
+      setSuggestionMessage('Could not search other branches right now.')
+    } finally {
+      setIsFindingSuggestions(false)
+    }
+  }
+
+  const selectSuggestionForMerge = (suggestion) => {
+    if (!currentNodeId || suggestion.node_id === currentNodeId) return
+    setSelectedNodeIds([currentNodeId, suggestion.node_id])
+    setSuggestions([])
+    setSuggestionMessage('Selected this idea and the current node. Review the merge prompt, then send.')
   }
 
   const fetchGraph = useCallback(async () => {
@@ -366,7 +410,7 @@ function App() {
             identifier: baseId,
             conversation_id: currentConversationId
           })
-        } catch (_err) {
+        } catch {
           alert("Failed to auto-checkout base node for merge.")
           return;
         }
@@ -702,6 +746,39 @@ function App() {
           <div ref={historyEndRef} />
         </div>
 
+        {(suggestions.length > 0 || suggestionMessage) && (
+          <div className="second-wind-panel">
+            <div className="second-wind-header">
+              <strong>Second Wind suggestions</strong>
+              <button
+                type="button"
+                onClick={() => { setSuggestions([]); setSuggestionMessage('') }}
+                aria-label="Close suggestions"
+              >
+                ✕
+              </button>
+            </div>
+            {suggestionMessage && (
+              <div className="second-wind-message">{suggestionMessage}</div>
+            )}
+            {suggestions.map(suggestion => (
+              <button
+                type="button"
+                className="second-wind-suggestion"
+                key={suggestion.node_id}
+                onClick={() => selectSuggestionForMerge(suggestion)}
+              >
+                <span className="second-wind-meta">
+                  {suggestion.branch_name || 'another path'}
+                  {typeof suggestion.score === 'number' && ` · ${Math.round(suggestion.score * 100)}% match`}
+                </span>
+                <span>{suggestion.content.slice(0, 180)}{suggestion.content.length > 180 ? '…' : ''}</span>
+                <span className="second-wind-action">Select for merge →</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Attachments Preview */}
         {pendingAttachments.length > 0 && (
           <div className="attachments-preview">
@@ -747,6 +824,16 @@ function App() {
             title="Attach files"
           >
             {uploadingFiles ? '⏳' : '📎'}
+          </button>
+
+          <button
+            type="button"
+            onClick={findSecondWindSuggestions}
+            disabled={loading || isFindingSuggestions || !currentConversationId || !input.trim() || selectedNodeIds.length === 2}
+            className="second-wind-button"
+            title="Find relevant ideas from another conversation path"
+          >
+            {isFindingSuggestions ? 'Searching…' : 'Second Wind'}
           </button>
 
           <select

@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "branch_name": {
+        "type": "string"
+      },
+      "content": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "autocomplete",
+          "minGrams": 2,
+          "maxGrams": 20
+        }
+      ],
+      "role": {
+        "type": "string"
+      },
+      "semantic_text": {
+        "type": "string"
+      }
+    }
+  }
+}

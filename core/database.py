@@ -920,3 +920,103 @@ def cleanup_orphan_attachments(max_age_hours: int = 24) -> int:
         print(f"Cleaned up {cleaned} orphan attachment(s)")
 
     return cleaned
+
+
+# --- Backend selection -----------------------------------------------------
+
+def get_backend_name() -> str:
+    """Returns the active persistence backend name."""
+    return "sqlite"
+
+
+def get_database_status() -> Dict:
+    """Returns non-sensitive diagnostics for the local SQLite fallback."""
+    try:
+        with get_connection() as conn:
+            conversations = conn.execute(
+                "SELECT COUNT(*) FROM conversations"
+            ).fetchone()[0]
+            nodes = conn.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+            attachments = conn.execute(
+                "SELECT COUNT(*) FROM attachments"
+            ).fetchone()[0]
+        return {
+            "backend": get_backend_name(),
+            "connected": True,
+            "database": get_db_path(),
+            "collections": {
+                "conversations": conversations,
+                "nodes": nodes,
+                "attachments": attachments,
+            },
+        }
+    except Exception as exc:
+        return {
+            "backend": get_backend_name(),
+            "connected": False,
+            "database": get_db_path(),
+            "error": type(exc).__name__,
+        }
+
+
+def find_semantic_matches(
+    query: str,
+    conversation_id: Optional[str] = None,
+    exclude_node_ids: Optional[List[str]] = None,
+    limit: int = 5,
+) -> List[Dict]:
+    """Semantic suggestions require MongoDB Atlas Vector Search."""
+    raise RuntimeError(
+        "Second Wind suggestions require MONGODB_URI and an Atlas Vector "
+        "Search index."
+    )
+
+
+def _activate_configured_backend() -> None:
+    """Switches this module's public persistence API to MongoDB Atlas."""
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    if not os.getenv("MONGODB_URI"):
+        return
+
+    from . import mongodb_database
+
+    public_functions = (
+        "get_backend_name",
+        "get_db_path",
+        "get_database_status",
+        "init_db",
+        "migrate_json_to_sqlite",
+        "list_conversations",
+        "create_conversation",
+        "delete_conversation",
+        "conversation_exists",
+        "update_conversation_timestamp",
+        "rename_conversation",
+        "get_conversation_current_node",
+        "set_conversation_current_node",
+        "save_node",
+        "get_all_nodes",
+        "add_edge",
+        "find_root_node_id",
+        "get_node_parents",
+        "get_node_children",
+        "delete_node",
+        "search_nodes",
+        "find_semantic_matches",
+        "save_attachment",
+        "get_attachment",
+        "get_attachments_by_ids",
+        "get_node_attachments",
+        "link_attachments_to_node",
+        "delete_attachment",
+        "get_orphan_attachments",
+        "get_nodes_attachments",
+        "cleanup_orphan_attachments",
+    )
+    for function_name in public_functions:
+        globals()[function_name] = getattr(mongodb_database, function_name)
+
+
+_activate_configured_backend()

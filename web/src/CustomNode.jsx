@@ -1,6 +1,6 @@
 import React from 'react';
 
-const CustomNode = ({ nodeDatum, toggleNode, onNodeClick }) => {
+const CustomNode = ({ nodeDatum, onNodeClick }) => {
     const { role, content, userContent, assistantContent } = nodeDatum;
     const isTurn = role === 'turn';
     const width = 250;

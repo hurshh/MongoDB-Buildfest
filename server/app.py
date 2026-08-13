@@ -15,8 +15,8 @@ from core import attachment_utils
 load_dotenv()
 
 app = FastAPI(
-    title="Forky API",
-    description="API for the Forky conversation management tool.",
+    title="Second Wind API",
+    description="Branching conversations and semantic recall powered by MongoDB Atlas.",
     version="0.1.0"
 )
 
@@ -44,6 +44,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 def startup_event():
     """Initialize database and run migrations on server startup."""
     db.init_db()
+    print(f"Persistence backend: {db.get_backend_name()}")
     migrated = db.migrate_json_to_sqlite()
     if migrated > 0:
         print(f"Migrated {migrated} conversations from JSON to SQLite")
@@ -115,6 +116,14 @@ class MergeEligibilityRequest(BaseModel):
 class CreateConversationRequest(BaseModel):
     """Request model for creating a new conversation."""
     name: Optional[str] = None
+
+
+class SuggestionRequest(BaseModel):
+    """Request model for semantic recall across conversation branches."""
+    query: str
+    conversation_id: Optional[str] = None
+    exclude_node_ids: Optional[List[str]] = None
+    limit: int = 5
 
 
 # --- Attachment Endpoints ---
@@ -272,6 +281,12 @@ def get_available_models():
     return {"models": models}
 
 
+@app.get("/database/status")
+def database_status():
+    """Returns safe diagnostics for the active persistence backend."""
+    return db.get_database_status()
+
+
 @app.get("/conversations")
 def list_conversations():
     """Lists all available conversations, sorted by last update time."""
@@ -342,6 +357,28 @@ def search(q: str = ""):
 
     results = db.search_nodes(q.strip())
     return {"results": results}
+
+
+@app.post("/suggestions")
+def suggestions(request: SuggestionRequest):
+    """Finds relevant work from parallel or abandoned conversation paths."""
+    if not request.query.strip():
+        return {"available": True, "suggestions": []}
+
+    try:
+        matches = db.find_semantic_matches(
+            query=request.query,
+            conversation_id=request.conversation_id,
+            exclude_node_ids=request.exclude_node_ids,
+            limit=request.limit,
+        )
+        return {"available": True, "suggestions": matches}
+    except RuntimeError as exc:
+        return {
+            "available": False,
+            "suggestions": [],
+            "message": str(exc),
+        }
 
 @app.get("/tree")
 def get_tree(conversation_id: Optional[str] = None):

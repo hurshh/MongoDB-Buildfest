@@ -1,0 +1,22 @@
+{
+  "fields": [
+    {
+      "type": "autoEmbed",
+      "modality": "text",
+      "path": "semantic_text",
+      "model": "voyage-4"
+    },
+    {
+      "type": "filter",
+      "path": "conversation_id"
+    },
+    {
+      "type": "filter",
+      "path": "role"
+    },
+    {
+      "type": "filter",
+      "path": "node_type"
+    }
+  ]
+}

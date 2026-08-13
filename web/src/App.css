@@ -548,6 +548,90 @@
   cursor: not-allowed;
 }
 
+.second-wind-button {
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  border: 1px solid rgba(167, 139, 250, 0.7);
+  border-radius: var(--radius-md);
+  color: white;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.second-wind-button:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.second-wind-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.second-wind-panel {
+  background: rgba(30, 41, 59, 0.98);
+  border: 1px solid rgba(139, 92, 246, 0.55);
+  border-radius: var(--radius-md);
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.35);
+  margin: 0 18px 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.second-wind-header {
+  align-items: center;
+  color: #ddd6fe;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.second-wind-header button {
+  background: none;
+  border: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.second-wind-message {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 5px 2px;
+}
+
+.second-wind-suggestion {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 7px;
+  padding: 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.second-wind-suggestion:hover {
+  background: rgba(124, 58, 237, 0.16);
+  border-color: #8b5cf6;
+}
+
+.second-wind-meta,
+.second-wind-action {
+  color: #a78bfa;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.second-wind-action {
+  align-self: flex-end;
+}
+
 /* --- Animations --- */
 @keyframes fadeIn {
   from {

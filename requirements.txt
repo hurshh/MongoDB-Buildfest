@@ -6,3 +6,5 @@ uvicorn==0.37.0
 pydantic==2.12.5
 python-multipart>=0.0.6
 PyPDF2>=3.0.0
+pymongo>=4.7,<5
+dnspython>=2.6,<3
