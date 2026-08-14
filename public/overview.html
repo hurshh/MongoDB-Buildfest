@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ConvTree — Overview, User Flow & Why MongoDB</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1f232c; --border:#2a2f3a;
+    --text:#e6e8ee; --muted:#8b93a7; --accent:#58a6ff; --user:#4ade80;
+    --assistant:#f0b429; --green:#3fb950; --mongo:#00ed64;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;line-height:1.55}
+  a{color:var(--accent)}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 22px 80px}
+  header.hero{padding:40px 0 24px;border-bottom:1px solid var(--border)}
+  .badge{display:inline-block;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--mongo);border:1px solid var(--border);border-radius:999px;padding:3px 10px;margin-bottom:14px}
+  h1{font-size:40px;margin:0 0 6px;letter-spacing:-0.5px}
+  h1 .git{color:var(--accent)}
+  .tag{color:var(--muted);font-size:18px;margin:0}
+  h2{margin:38px 0 12px;font-size:24px;border-left:3px solid var(--accent);padding-left:10px}
+  h3{margin:22px 0 8px;font-size:17px;color:var(--text)}
+  p{margin:10px 0}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:14px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  code{background:var(--panel2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:13px}
+  pre{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:14px;overflow-x:auto;font-size:13px}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--border);border-radius:999px;
+    padding:2px 10px;font-size:12px;margin:2px 4px 2px 0;color:var(--muted)}
+  .steps{counter-reset:step;list-style:none;padding:0;margin:0}
+  .steps li{position:relative;padding:12px 0 12px 46px;border-bottom:1px dashed var(--border)}
+  .steps li:before{counter-increment:step;content:counter(step);position:absolute;left:0;top:12px;
+    width:30px;height:30px;border-radius:50%;background:var(--accent);color:#04121f;font-weight:700;
+    display:flex;align-items:center;justify-content:center}
+  .steps li:last-child{border-bottom:none}
+  .kv{display:grid;grid-template-columns:150px 1fr;gap:6px 14px;margin:8px 0}
+  .kv .k{color:var(--muted)}
+  .whoU{color:var(--user);font-weight:600}
+  .whoA{color:var(--assistant);font-weight:600}
+  .callout{border-left:3px solid var(--mongo);background:rgba(0,237,100,0.06);padding:12px 16px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--muted);font-weight:600}
+  .legend span{margin-right:16px;font-size:13px;color:var(--muted)}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:13px}
+  .btnrow a{display:inline-block;margin:8px 10px 0 0;background:var(--accent);color:#04121f;
+    text-decoration:none;font-weight:700;padding:9px 16px;border-radius:8px}
+  .btnrow a.alt{background:var(--panel2);color:var(--text);border:1px solid var(--border)}
+  svg .node rect{fill:var(--panel2);stroke:var(--border)}
+  svg .node.path rect{stroke:var(--accent);stroke-width:2}
+  svg .node.head rect{stroke:var(--accent);stroke-width:3}
+  svg .node text{fill:var(--text);font-size:12px;font-family:ui-monospace,monospace}
+  svg .edge{stroke:var(--border);stroke-width:1.5;fill:none}
+  svg .edge.path{stroke:var(--accent);stroke-width:2.2}
+  svg .lbl{fill:var(--muted);font-size:11px;font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">MongoDB Buildfest · Atlas Sandbox</span>
+    <h1>ConvTree — <span class="git">git</span> for LLM conversations</h1>
+    <p class="tag">Chat linearly like ChatGPT. <code>/cp</code> to commit a checkpoint. Click any past checkpoint to fork from it — nothing is ever lost.</p>
+    <div class="btnrow">
+      <a href="http://localhost:3000/">▶ Open the live app</a>
+      <a class="alt" href="#flow">Jump to user flow</a>
+      <a class="alt" href="#mongo">Why MongoDB</a>
+    </div>
+  </header>
+
+  <!-- PROBLEM -->
+  <h2 id="problem">The problem we're solving</h2>
+  <div class="card">
+    <p>Chat with any LLM today and the conversation is a <strong>single straight line</strong>. That creates three real pains:</p>
+    <div class="grid3">
+      <div>
+        <h3>🧵 One timeline</h3>
+        <p class="muted">To try a different approach you either edit-and-lose the old answer, or start a brand-new chat and lose all the context that got you there.</p>
+      </div>
+      <div>
+        <h3>↩️ No real "undo"</h3>
+        <p class="muted">"Go back to how it was 8 messages ago, but keep this other branch too" is impossible. Exploration is destructive.</p>
+      </div>
+      <div>
+        <h3>🔍 No way to find a moment</h3>
+        <p class="muted">Long chats become a wall of text. "Where were we discussing the pricing options?" means scrolling forever.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOLUTION -->
+  <h2 id="solution">The idea, in one paragraph (git for chats)</h2>
+  <div class="card">
+    <p>You chat with the model <strong>linearly, exactly like ChatGPT</strong>. When you decide the conversation just reached a moment worth preserving, you type <code>/cp [label]</code> — that's a commit. It writes a <strong>checkpoint node</strong> to a tree, capturing all the messages since the previous checkpoint. Keep chatting. Commit again. If you ever want to explore a different direction, <strong>click a past checkpoint in the tree</strong> — that's checkout — and continue. Your next commit becomes a child of <em>that</em> checkpoint, forking the tree. Nothing is destroyed.</p>
+    <div class="callout">
+      <strong>Key insight:</strong> you don't need any "checkpointing machinery." An append-only commit tree <em>is</em> the checkpoint system. That's exactly what a document database with graph traversal expresses cleanly — which is why MongoDB fits so naturally (see below).
+    </div>
+  </div>
+
+  <h3>Git mental model</h3>
+  <table>
+    <tr><th>Git</th><th>ConvTree</th></tr>
+    <tr><td><code>git commit</code></td><td><code>/cp [label]</code> — writes a checkpoint node under HEAD with the messages since the last checkpoint</td></tr>
+    <tr><td><code>git checkout &lt;sha&gt;</code></td><td>Click a checkpoint node (or <code>/checkout s1-3</code>) — HEAD moves there; new messages will fork from that point</td></tr>
+    <tr><td>Working directory</td><td>Uncommitted messages since the last <code>/cp</code> — shown inline as "uncommitted"</td></tr>
+    <tr><td>Branch</td><td>Any subtree; created implicitly when you commit from an older HEAD</td></tr>
+    <tr><td><em>(not in git)</em></td><td><strong>Semantic search</strong> over checkpoints — jump back to a state described in natural language</td></tr>
+  </table>
+
+  <!-- TREE DIAGRAM -->
+  <h2 id="tree">How the commit tree grows</h2>
+  <p>Each session gets a short prefix (<code>s1</code>). Each checkpoint gets an id like <code>s1-3</code> and a label. HEAD marks where the next commit will attach.</p>
+
+  <div class="card">
+    <div class="legend" style="margin-bottom:8px">
+      <span><span class="dot" style="background:var(--accent)"></span>active path (root → HEAD)</span>
+      <span><span class="dot" style="background:var(--border)"></span>other branches (preserved)</span>
+    </div>
+    <svg viewBox="0 0 780 360" width="100%" height="360" role="img" aria-label="Commit tree diagram">
+      <!-- edges -->
+      <path class="edge path" d="M390,52 L390,132"/>
+      <path class="edge path" d="M390,152 L390,232"/>
+      <path class="edge"      d="M390,152 L610,232"/>
+      <path class="edge path" d="M390,252 L390,312"/>
+      <!-- nodes -->
+      <g class="node"><rect x="330" y="22" width="120" height="30" rx="6"/><text x="352" y="42">s1-0 root</text></g>
+      <g class="node path"><rect x="330" y="122" width="120" height="30" rx="6"/><text x="342" y="142">s1-1 · intro</text></g>
+      <g class="node path"><rect x="330" y="222" width="120" height="30" rx="6"/><text x="336" y="242">s1-2 · pricing</text></g>
+      <g class="node"><rect x="550" y="222" width="120" height="30" rx="6"/><text x="558" y="242">s1-3 · auth idea</text></g>
+      <g class="node head"><rect x="330" y="322" width="120" height="30" rx="6"/><text x="344" y="342">s1-4 · HEAD</text></g>
+      <!-- labels -->
+      <text class="lbl" x="470" y="180">forked here: click s1-1</text>
+      <text class="lbl" x="470" y="200">then chat + /cp</text>
+      <text class="lbl" x="465" y="290">then chat + /cp again</text>
+    </svg>
+    <p class="muted" style="margin-top:6px">
+      <code>s1-2</code> is a straight commit after <code>s1-1</code>. Then you clicked <code>s1-1</code> (checkout) and chatted a different direction; the next <code>/cp</code> created <code>s1-3</code> as a sibling of <code>s1-2</code>. You came back to <code>s1-2</code>, kept going, committed <code>s1-4</code>. <code>s1-3</code> is untouched.
+    </p>
+  </div>
+
+  <h3>What one checkpoint looks like</h3>
+  <pre>{
+  _id:           ObjectId("…"),
+  sessionId:     ObjectId("…"),
+  shortId:       "s1-2",              // human-friendly, per-session
+  parentId:      ObjectId("…s1-1"),   // the tree edge
+  depth:         2,
+  label:         "pricing",           // from /cp pricing
+  summary:       "Discussed pricing tiers vs. usage-based …",
+  deltaMessages: [                    // the messages between s1-1 and s1-2
+    { role: "user",      content: "compare tiered vs usage-based pricing" },
+    { role: "assistant", content: "Tiered gives predictable revenue …" },
+    { role: "user",      content: "which is better for early stage?" },
+    { role: "assistant", content: "Usage-based reduces buyer friction …" }
+  ],
+  embedding:     [0.013, -0.221, …]    // vector on summary for semantic search
+}</pre>
+  <p class="muted">Storing <em>only the delta</em> per commit (like git) keeps checkpoints small. Reconstructing the full conversation for any node = one <code>$graphLookup</code> from that node back to root, then concatenate deltas in depth order.</p>
+
+  <!-- USER FLOW -->
+  <h2 id="flow">The user flow</h2>
+  <ol class="steps">
+    <li><strong>Start a session.</strong> A root checkpoint <code>s1-0</code> is created; HEAD = root. The screen splits into <em>commit tree</em> (left) and <em>conversation</em> (right).</li>
+    <li><strong>Chat linearly.</strong> Type prompts, hit Enter. Messages accumulate in the conversation panel and are tracked as <em>uncommitted</em> — a working-directory chip on the top bar shows the count.</li>
+    <li><strong>Commit with <code>/cp [label]</code>.</strong> One API call writes a checkpoint node to the tree under HEAD, embeds a summary, and clears the uncommitted state. HEAD moves to the new node.</li>
+    <li><strong>Keep chatting → commit again.</strong> Straight-line commits stack: <code>s1-1 → s1-2 → …</code>. Context between commits keeps growing normally.</li>
+    <li><strong>Fork by clicking.</strong> Click any earlier checkpoint in the tree. HEAD jumps there. Chat, then <code>/cp</code> — that new commit becomes a child of the older node. The path you left behind stays intact.</li>
+    <li><strong>Jump by meaning.</strong> Type <em>"where did we discuss pricing"</em> in the search box. Atlas Vector Search returns matching checkpoints with scores; click one to check it out.</li>
+    <li><strong>Switch models anytime.</strong> Provider dropdown flips between <em>Ollama (local)</em> and <em>OpenAI</em> (paste a key). Same UI, same tree.</li>
+  </ol>
+
+  <h3>Slash commands (typed into the compose box)</h3>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>/cp [label]</code></td><td>Commit uncommitted messages as a new checkpoint under HEAD. Same as clicking the <em>/cp</em> button.</td></tr>
+    <tr><td><code>/checkpoint [label]</code></td><td>Alias of <code>/cp</code>.</td></tr>
+    <tr><td><code>/checkout &lt;shortId&gt;</code></td><td>Move HEAD to that node (e.g. <code>/checkout s1-2</code>). Same as clicking the node.</td></tr>
+    <tr><td><code>/help</code></td><td>Show a hint line.</td></tr>
+    <tr><td><em>anything else</em></td><td>Sent to the LLM as a normal user prompt.</td></tr>
+  </table>
+
+  <!-- WHY MONGODB -->
+  <h2 id="mongo">Why MongoDB is the right choice</h2>
+  <p>This is not "a database bolted onto an AI app." The core data structure <em>is</em> a commit tree, and the core queries are tree-traversal and vector-similarity — both native to Atlas.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0">1 · The document model <em>is</em> the tree</h3>
+      <p class="muted">Each checkpoint is a document with a <code>parentId</code>. No rigid schema, no join tables — the branching shape maps 1:1 onto documents. Adding a commit is a single <code>insert</code>.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">2 · <code>$graphLookup</code> reconstructs any path</h3>
+      <p class="muted">Rebuilding the conversation for any checkpoint (root → node) is <em>one aggregation</em> that walks <code>parentId</code>. No N+1 queries, no application-side loop. That path becomes the exact context we send to the model.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">3 · Atlas Vector Search = navigate by meaning</h3>
+      <p class="muted">Each checkpoint's summary is embedded on commit. <code>$vectorSearch</code> filtered to the session gives ranked "where did we discuss X" jumps. The database that stores the tree also searches it — no separate vector store to sync.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">4 · One store for structure + semantics</h3>
+      <p class="muted">Tree links, message deltas, and vectors live in the same collection. One query language, one connection, one thing to deploy. And MongoDB <strong>owns Voyage AI</strong>, so best-in-class embeddings are a first-class swap.</p>
+    </div>
+  </div>
+
+  <div class="callout">
+    <strong>The one-liner for judges:</strong> "The chat is a commit graph of documents; <code>$graphLookup</code> reconstructs any past state in a single query and Atlas Vector Search makes a dense history navigable by meaning."
+  </div>
+
+  <h3>How each user action maps to MongoDB</h3>
+  <table>
+    <tr><th>User action</th><th>API route</th><th>MongoDB operation</th></tr>
+    <tr><td>Start session</td><td><code>POST /api/session</code></td><td>Insert session + root checkpoint. Session tracks <code>headCheckpointId</code> + <code>pendingMessages[]</code>.</td></tr>
+    <tr><td>Chat (any prompt)</td><td><code>POST /api/chat</code></td><td><code>$graphLookup</code> root→HEAD to build context · call LLM · <code>$push</code> both messages to <code>session.pendingMessages</code>.</td></tr>
+    <tr><td><code>/cp label</code></td><td><code>POST /api/checkpoint</code></td><td><code>$inc</code> counter for short id · <code>insertOne</code> a checkpoint with the pending messages as <code>deltaMessages</code> · embed summary · set new HEAD.</td></tr>
+    <tr><td>Click a node</td><td><code>POST /api/checkout</code></td><td><code>updateOne</code> HEAD, clear pending (with confirm if uncommitted).</td></tr>
+    <tr><td>Render tree</td><td><code>GET /api/tree</code></td><td><code>find</code> by sessionId, sort by depth.</td></tr>
+    <tr><td>Search by meaning</td><td><code>POST /api/search</code></td><td><code>$vectorSearch</code> on <code>embedding</code>, filter by <code>sessionId</code>.</td></tr>
+  </table>
+
+  <!-- STACK -->
+  <h2 id="stack">The stack &amp; sponsors</h2>
+  <div class="card">
+    <p>
+      <span class="pill">MongoDB Atlas — tree + $graphLookup + Vector Search</span>
+      <span class="pill">Next.js 15 + TypeScript</span>
+      <span class="pill">ReactFlow — tree UI</span>
+      <span class="pill">Ollama (local, no key)</span>
+      <span class="pill">OpenAI (deployed demo)</span>
+    </p>
+    <p class="muted">The LLM layer is one interface (<code>chatOnce</code>, <code>embed</code>), so sponsors swap in with a one-line change: <strong>OpenRouter</strong> (base URL), <strong>Voyage AI</strong> (embeddings — MongoDB-owned), <strong>Fireworks</strong> (base URL), <strong>ElevenLabs</strong> (read a checkpoint aloud). Built with <strong>Cursor</strong>.</p>
+  </div>
+
+  <footer>
+    ConvTree · MongoDB Buildfest · built in the Atlas Sandbox.
+    Live app at <a href="http://localhost:3000/">localhost:3000</a>.
+    Requires <code>MONGODB_URI</code> in <code>.env</code> and either a running Ollama or an OpenAI key.
+  </footer>
+
+</div>
+</body>
+</html>
